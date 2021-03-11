@@ -14,34 +14,26 @@
 
 
 class ReadFilter{
+private:
+    sam_hdr_t * readsHeader;
 public:
+    ReadFilter(sam_hdr_t * hdr);
+
     /**
      * Function to filter the reads
      * @param read
      * @return whether or not this read is accepted
      */
-    bool AcceptOrNot(sam_hdr_t *h, bam1_t * read );
+    bool AcceptOrNot(bam1_t * read );
 
     bool MappingQualityNotZero(bam1_t * read);
     bool MappingQualityAvailable(bam1_t * read);
-    bool MappedRead(sam_hdr_t *h, bam1_t *read);
+    bool MappedRead(bam1_t *read);
     bool NotSecondaryAlignment(bam1_t * read);
     bool NotDuplicate(bam1_t * read);
     bool PassesVendorQualityCheck(bam1_t * read);
     bool Wellformed(bam1_t * read);
 
-    /**
-     * @param read
-     * @return whether or not the read is unmapped
-     */
-    bool IsUnmapped(sam_hdr_t *h, bam1_t *read); //TODO: Maybe this function needs to be encapsulated into sam.h
-
-    /**
-     * Only to encapsulate sam_hdr_tid2name function in sam.h
-     */
-    const char * GetReferenceName(sam_hdr_t *h, bam1_t * read);
-
-    int GetStart(bam1_t * read);
 };
 
 

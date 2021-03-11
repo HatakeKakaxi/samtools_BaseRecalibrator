@@ -4,16 +4,22 @@
 #include <iostream>
 #include "ReadFilter.h"
 #include "string.h"
+#include "SamRead.h"
 
 using namespace std;
 
-bool ReadFilter::AcceptOrNot(sam_hdr_t *h, bam1_t *read)
+ReadFilter::ReadFilter(sam_hdr_t * hdr)
+{
+    this->readsHeader = hdr;
+}
+
+bool ReadFilter::AcceptOrNot(bam1_t *read)
 {
     if(!MappingQualityNotZero(read))
         return false;
     if(!MappingQualityAvailable(read))
         return false;
-    if(!MappedRead(h, read))
+    if(!MappedRead(read))
         return false;
     if(!NotSecondaryAlignment(read))
         return false;
@@ -37,9 +43,9 @@ bool ReadFilter::MappingQualityAvailable(bam1_t *read)
     return read->core.qual != MAPPING_QUALITY_UNAVAILABLE;
 }
 
-bool ReadFilter::MappedRead(sam_hdr_t *h, bam1_t *read)
+bool ReadFilter::MappedRead(bam1_t *read)
 {
-    return !IsUnmapped(h, read);
+    return !IsUnmapped(readsHeader, read);
 }
 
 bool ReadFilter::NotSecondaryAlignment(bam1_t *read)
@@ -60,22 +66,4 @@ bool ReadFilter::PassesVendorQualityCheck(bam1_t *read)
 bool ReadFilter::Wellformed(bam1_t *read) //TODO: To be completed
 {
     return GetStart(read) > 0 ; //---how to get ReadGroup of an alignment?
-}
-
-bool ReadFilter::IsUnmapped(sam_hdr_t *h, bam1_t *read)
-{
-    return (read->core.flag & BAM_FMUNMAP) != 0 || GetReferenceName(h, read) == NULL ||
-        strcmp(GetReferenceName(h, read), NO_ALIGNMENT_REFERENCE_NAME) == 0 ||
-        GetStart(read) == NO_ALIGNMENT_START;
-}
-
-const char* ReadFilter::GetReferenceName(sam_hdr_t *h, bam1_t *read)
-{
-    return sam_hdr_tid2name(h, read->core.tid);
-}
-
-//---this function needs to be confirmed
-int ReadFilter::GetStart(bam1_t *read)
-{
-    return read->core.pos + 1;    //---need to +1
 }
