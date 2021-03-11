@@ -13,7 +13,6 @@ using namespace std;
 
 extern "C" int main_baserecalibrator(int argc, char *argv[]);
 
-
 void error(const char *format, ...)
 {
     int err = errno;
@@ -84,6 +83,7 @@ int main_baserecalibrator(int argc, char *argv[])
 {
     int returned=0;
     int c;
+    int ret;
     char *in=0, *output = 0, *ref = 0;
 
     //---some bug here
@@ -132,8 +132,6 @@ int main_baserecalibrator(int argc, char *argv[])
     ReadFilter filter(hdr);
     BaseRecalibrationEngine baseRecalibrationEngine(hdr, ref);
 
-    int ret;
-
     b = bam_init1();
     if (b == NULL)
     {
@@ -143,11 +141,16 @@ int main_baserecalibrator(int argc, char *argv[])
         return returned;
     }
 
+    int ReadNum = 0;
+
     while ((ret = sam_read1(hts, hdr, b)) >= 0) {
-        if(filter.AcceptOrNot(b))
+        if(filter.AcceptOrNot(b)){
+            ReadNum ++;
             //printReads(b);
             //---start of BaseRecalibrationEngine
             baseRecalibrationEngine.processRead(b);
+        }
+
     }
 
     if (ret < -1) { error("reading \"%s\" failed", in); goto clean; }

@@ -40,6 +40,8 @@ void BaseRecalibrationEngine::processRead(bam1_t *originalRead) {
 
 
     double * snpErrors = new double[readLength];
+    //int * snpErrors = new int[readLength];
+    memset(snpErrors, 0, readLength* sizeof(double));
     calculateSNPFractionalError(read , snpErrors);
 
     delete cachedKeys;
@@ -63,7 +65,7 @@ bam1_t * BaseRecalibrationEngine::hardClipAdaptorSequence(bam1_t *originalRead)
 
     return originalRead;
 
-    //TODO: complete the transform operation 2021.3.10
+    //TODO: complete the transform oeration 2021.3.10
     //return isReverseStrand(originalRead) ? hardClipByReferenceCoordinatesLeftTail(adaptorBoundary) : hardClipByReferenceCoordinatesRightTail(adaptorBoundary);
 }
 
@@ -134,10 +136,7 @@ void BaseRecalibrationEngine::calculateSNPFractionalError(bam1_t *read, double *
 {
     const char * refName = sam_hdr_tid2name(readsHeader, read->core.tid);
     hts_pos_t start = read->core.pos; //---zero based
-    //hts_pos_t end = read->core.pos + read->core.l_qseq - 1;
     hts_pos_t end = bam_endpos(read)-1;
-    //assert(end == bam_endpos(read));
-    //cout << refName << " " << start << " " << end << endl;
 
     hts_pos_t fai_ref_len;
     char * refBases;
@@ -145,7 +144,6 @@ void BaseRecalibrationEngine::calculateSNPFractionalError(bam1_t *read, double *
     //---get the subsequence of fasta file
     refBases = faidx_fetch_seq64(fai, refName, start, end, &fai_ref_len);
     assert(refBases != NULL);
-    //cout << refBases << endl;
 
     int readPos = 0;
     int refPos = 0;
@@ -186,19 +184,16 @@ void BaseRecalibrationEngine::calculateSNPFractionalError(bam1_t *read, double *
 
     /*
      * For debugging
-     */
+     *
     for(int i=0; i<read->core.l_qseq; i++ )
     {
-        if(snpErrors[i])
+        if(snpErrors[i] != 0)
             printf("1");
         else
             printf("0");
+        //printf("%d\t", snpErrors[i]);
     }
-    printf("\n");
+    printf("\n");   */
 
     free(refBases);
-
-    assert(refName != NULL);
-    assert(start > 0);
-    assert(end > 0);
 }
