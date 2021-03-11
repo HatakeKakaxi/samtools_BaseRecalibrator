@@ -278,7 +278,7 @@ int faidx_core(int argc, char *argv[], enum fai_format_options format)
             case 'i': rev = 1; break;
             case '?': return usage(stderr, format, EXIT_FAILURE);
             case 'h': return usage(stdout, format, EXIT_SUCCESS);
-            case 1000:
+            case 1000:  //---???
                 if (strcmp(optarg, "no") == 0) {
                     pos_strand_name = neg_strand_name = "";
                 } else if (strcmp(optarg, "sign") == 0) {

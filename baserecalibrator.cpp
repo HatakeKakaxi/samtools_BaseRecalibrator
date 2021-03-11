@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include "sam_opts.h"
 #include "htslib/hfile.h"
+#include "htslib/faidx.h"
 #include "base/BaseRecalibrationEngine.h"
 #include "base/ReadFilter.h"
 #include <assert.h>
@@ -83,7 +84,7 @@ int main_baserecalibrator(int argc, char *argv[])
 {
     int returned=0;
     int c;
-    char *in=0, *output = 0;
+    char *in=0, *output = 0, *ref = 0;
 
     //---some bug here
     /*
@@ -97,10 +98,11 @@ int main_baserecalibrator(int argc, char *argv[])
     if (argc == 1 && isatty(STDIN_FILENO))
         return usage(stdout, EXIT_SUCCESS, 0);
 
-    while ((c = getopt(argc, argv, "I:O:")) >= 0) { //TODO: make it more robust
+    while ((c = getopt(argc, argv, "I:O:R:")) >= 0) { //TODO: make it more robust
         switch (c) {
             case 'I': in = strdup(optarg); break;
             case 'O': output = strdup(optarg); break;
+            case 'R': ref = strdup(optarg); break;
             default:
                 //if (parse_sam_global_opt(c, optarg, lopts, &ga) != 0)
                     return usage(stderr, EXIT_FAILURE, 0);
@@ -108,6 +110,8 @@ int main_baserecalibrator(int argc, char *argv[])
             case '?': return usage(stderr, EXIT_FAILURE, 0); break;
         }
     }
+
+    assert(ref != NULL);
 
     struct hFILE *fp = hopen(in, "r");
     assert(fp != NULL);
@@ -125,32 +129,25 @@ int main_baserecalibrator(int argc, char *argv[])
         bam_destroy1(b);
     }
 
-    /*
-    //---print the header to stdout
-    samFile *out = NULL;
-    out = dup_stdout("w");
-    if (out == NULL) { error("reopening standard output failed"); goto clean; }
-
-
-    if (sam_hdr_write(out, hdr) != 0) {
-        error("writing headers to standard output failed");
-        goto clean;
-    }*/
-
-    ReadFilter filter;
-    BaseRecalibrationEngine baseRecalibrationEngine(hdr);
+    ReadFilter filter(hdr);
+    BaseRecalibrationEngine baseRecalibrationEngine(hdr, ref);
 
     int ret;
 
     b = bam_init1();
-    if (b == NULL) { error("can't create record"); goto clean; }
-
+    if (b == NULL)
+    {
+        error("can't create record");
+        sam_hdr_destroy(hdr);
+        bam_destroy1(b);
+        return returned;
+    }
 
     while ((ret = sam_read1(hts, hdr, b)) >= 0) {
-        if(filter.AcceptOrNot(hdr, b))
+        if(filter.AcceptOrNot(b))
             //printReads(b);
             //---start of BaseRecalibrationEngine
-            baseRecalibrationEngine.processRead(b, hdr);
+            baseRecalibrationEngine.processRead(b);
     }
 
     if (ret < -1) { error("reading \"%s\" failed", in); goto clean; }
