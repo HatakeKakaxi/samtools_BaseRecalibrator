@@ -47,8 +47,10 @@ AOBJS=      bam_index.o bam_plcmd.o sam_view.o bam_fastq.o \
             bam_tview.o bam_tview_curses.o bam_tview_html.o bam_lpileup.o \
             bam_quickcheck.o bam_addrprg.o bam_markdup.o tmp_file.o \
 	    bam_ampliconclip.o amplicon_stats.o \
-	    baserecalibrator.o BaseRecalibrationEngine.o StandardCovariateList.o Covariate.o ReadFilter.o
+	    baserecalibrator.o
 LZ4OBJS  =  $(LZ4DIR)/lz4.o
+
+BASEOBJS = BaseRecalibrationEngine.o StandardCovariateList.o Covariate.o ReadFilter.o SamRead.o
 
 prefix      = /usr/local
 exec_prefix = $(prefix)
@@ -151,8 +153,8 @@ lib:libbam.a
 libbam.a:$(LOBJS)
 	$(AR) -csru $@ $(LOBJS)
 
-samtools: $(AOBJS) $(LZ4OBJS) libbam.a libst.a $(HTSLIB)
-	$(C++) $(ALL_LDFLAGS) -o $@ $(AOBJS) $(LZ4OBJS) libbam.a libst.a $(HTSLIB_LIB) $(CURSES_LIB) -lm $(ALL_LIBS) -lpthread
+samtools: $(AOBJS) $(BASEOBJS) $(LZ4OBJS) libbam.a libst.a $(HTSLIB)
+	$(C++) $(ALL_LDFLAGS) -o $@ $(AOBJS) $(BASEOBJS) $(LZ4OBJS) libbam.a libst.a $(HTSLIB_LIB) $(CURSES_LIB) -lm $(ALL_LIBS) -lpthread
 
 # For building samtools and its test suite only: NOT to be installed.
 libst.a: $(LIBST_OBJS)
@@ -223,18 +225,8 @@ bam_ampliconclip.o: bam_ampliconclip.c config.h $(htslib_thread_pool_h) $(sam_op
 
 baserecalibrator.o: baserecalibrator.cpp
 	g++ -g -Wall -O2 -I. -I../htslib -I./lz4 -c -o baserecalibrator.o baserecalibrator.cpp
-#BaseRecalibrationEngine.o: base/BaseRecalibrationEngine.cpp
-#	g++ -g -Wall -O2 -I. -I../htslib -I./lz4 -c -o BaseRecalibrationEngine.o ./base/BaseRecalibrationEngine.cpp
-#StandardCovariateList.o: base/StandardCovariateList.cpp
-#	g++ -g -Wall -O2 -I. -I../htslib -I./lz4 -c -o StandardCovariateList.o ./base/StandardCovariateList.cpp
-#Covariate.o: base/Covariate.cpp
-#	g++ -g -Wall -O2 -I. -I../htslib -I./lz4 -c -o Covariate.o ./base/Covariate.cpp
-#ReadFilter.o: base/ReadFilter.cpp
-#	g++ -g -Wall -O2 -I. -I../htslib -I./lz4 -c -o ReadFilter.o ./base/ReadFilter.cpp
 
-BaseObjects = BaseRecalibrationEngine.o StandardCovariateList.o Covariate.o ReadFilter.o
-
-$(BaseObjects): %.o: ./base/%.cpp 
+$(BASEOBJS): %.o: ./base/%.cpp 
 	$(C++) $(CFLAGS) $(ALL_CPPFLAGS) -c -o $@ $<
 
 # Maintainer source code checks
